@@ -1,0 +1,64 @@
+#!/data/data/com.termux/files/usr/bin/zsh
+
+termux-wake-lock
+
+APPNAME=$(basename "$0")
+APP_DATA="$HOME/.local/share/$APPNAME"
+METADATA="$APP_DATA/metadata.json"
+UP_TO_DATE=false
+
+[[ ! -d "$APP_DATA" ]] && mkdir -p "$APP_DATA"
+
+update_fun() {
+  while [[ "$UP_TO_DATE" == false ]]; do
+    if [[ "$(termux-wifi-connectioninfo | jq '.bssid')" != "null" ]]; then 
+      wget -O "$METADATA" "https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&date=$(date -u +"%Y-%m-%d")"
+      wget -O "$APP_DATA/apod.jpg" "$(jq -r '.hdurl' "$METADATA")"
+      [[ $? -eq 0 ]] && UP_TO_DATE=true
+    else
+      sleep 3600
+    fi
+  done
+}
+
+set_fun() {
+  termux-wallpaper -l -f "$APP_DATA/apod.jpg"
+  # termux-wallpaper -l -u "$(jq -r '.hdurl' "$METADATA")"
+  [[ $? != 0 ]] && $selected
+}
+
+print_fun() {
+  echo "Title: $(jq -r '.title' "$METADATA")"
+  echo "Explanation: $(jq -r '.explanation' "$METADATA")"
+}
+
+opt_count=0
+while getopts ":usp" opt; do
+  ((opt_count++))
+  case "$opt" in
+    u)
+      selected="update_fun"
+    ;;
+    s)
+      selected="set_fun"
+    ;;
+    p)
+      selected="print_fun"
+    ;;
+    \?) 
+      echo "Invalid option: -$OPTARG" >&2 
+      exit -1 
+    ;;
+  esac
+done
+
+if (( opt_count = 0 )); then
+  echo "You must pick at least one option: -u, -s or -p"
+  exit -1 
+elif (( opt_count > 1)); then
+  echo "Too many options"
+  exit -1 
+fi
+
+$selected
+
