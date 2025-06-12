@@ -2,10 +2,21 @@
 
 termux-wake-lock
 
-RED="[31m"
-GREEN="[32m"
-CYAN="[36m"
-RESET="[0m"
+BLACK=$'\033[30m'
+RED=$'\033[31m'
+GREEN=$'\033[32m'
+YELLOW=$'\033[33m'
+BLUE=$'\033[34m'
+MAGENTA=$'\033[35m'
+CYAN=$'\033[36m'
+WHITE=$'\033[37m'
+CYAN=$'\033[36m' 
+
+BOLD=$'\033[1m'
+ITALIC=$'\033[3m'
+UNDERLINE=$'\033[4m'
+
+RESET=$'\033[0m'
 
 APPNAME=$(basename "$0")
 APP_DATA="$HOME/.local/share/$APPNAME"
@@ -36,12 +47,14 @@ padding() {
   echo "$((${COLUMNS}/2 - ${#1}/2))"
 }
 center() {
+  # First argument is content
+  # Second argument is style
   p=$(padding $1)
-  printf "%-${p}s%s\n" "" "${GREEN}${1}${RESET}"
+  printf "%-${p}s%s\n" "" "${2}${1}${RESET}"
 }
 print_fun() {
-  center "$(jq -r '.title' "$METADATA")"
-  echo "$(jq -r '.explanation' "$METADATA")"
+  center "$(jq -r '.title' "$METADATA")" "${BOLD}${YELLOW}"
+  echo "  $(jq -r '.explanation' "$METADATA")"
 }
 
 opt_count=0
