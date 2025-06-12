@@ -54,7 +54,18 @@ center() {
 }
 print_fun() {
   center "$(jq -r '.title' "$METADATA")" "${BOLD}${YELLOW}"
-  echo "  $(jq -r '.explanation' "$METADATA")"
+  
+  explanation="  $(jq -r '.explanation' "$METADATA")"  
+  width=$(($COLUMNS/2 - 2))
+  lines=$(echo "$explanation" | fold -w $width)
+
+  IFS="\n"
+  lines_array=("${(@f)lines}")
+  half=$((${#lines_array[@]}/2))
+
+  for ((i = 1; i <= $half + 1; i++)); do
+    printf " %-${WIDTH}s  %s\n" "$lines_array[i]" "$lines_array[half+i-1]"
+  done
 }
 
 opt_count=0
