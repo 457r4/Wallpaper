@@ -2,6 +2,11 @@
 
 termux-wake-lock
 
+RED="[31m"
+GREEN="[32m"
+CYAN="[36m"
+RESET="[0m"
+
 APPNAME=$(basename "$0")
 APP_DATA="$HOME/.local/share/$APPNAME"
 METADATA="$APP_DATA/metadata.json"
@@ -27,9 +32,16 @@ set_fun() {
   [[ $? != 0 ]] && $selected
 }
 
+padding() {
+  echo "$((${COLUMNS}/2 - ${#1}/2))"
+}
+center() {
+  p=$(padding $1)
+  printf "%-${p}s%s\n" "" "${GREEN}${1}${RESET}"
+}
 print_fun() {
-  echo "Title: $(jq -r '.title' "$METADATA")"
-  echo "Explanation: $(jq -r '.explanation' "$METADATA")"
+  center "$(jq -r '.title' "$METADATA")"
+  echo "$(jq -r '.explanation' "$METADATA")"
 }
 
 opt_count=0
