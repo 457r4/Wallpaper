@@ -25,36 +25,17 @@ APOD="$APP_DATA/apod"
 
 [[ ! -d "$APP_DATA" ]] && mkdir -p "$APP_DATA"
 
-# Main variables?
+# Settings
+URL="https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY"
 OFFSET=$((6*3600))
-UP_TO_DATE=false
+TITLE_STYLE="${BOLD}${YELLOW}"
 
-
-# ADITIONALLY
-#   set and print should check if the displayed
-#   image corresponds to the date
-
-############### 6AM MODULE ###############
 TIME() {
   now=$(date +%s)
   echo $(date -d "@$((now - OFFSET))" +%Y-%m-%d)
 }
-# hour=$(date +%s)
-# corrected=$(($hour - 21600)) # Will move starting time to 6am
-# corrected_formated=$(date -d "@$corrected" +%Y-%m-%d)
-corrected_formated=$(TIME)
-echo "corrected_formated: $corrected_formated"
-if [[ "$corrected_formated" == "$(jq -r '.date' ${METADATA}.json)" ]]; then
-  echo "It is 'today'"
-else
-  echo "It is not 'today'"
-fi
-##########################################
 
-
-
-# Download data 
-# Keep a backup of past day
+# Download data && keep a backup of past day
 update_opt() {
   # Verify files' existence and make a backup if outdated
   utc=$(date -u +%Y-%m-%d)
@@ -69,12 +50,12 @@ update_opt() {
 
   # Check connection and obtain data 
   # If data fails to be obtained, retry
-  while [[ "$UP_TO_DATE" == false ]]; do
-    URL="https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY"
+  up_to_date=false
+  while [[ "$up_to_date" == false ]]; do
     if [[ "$(termux-wifi-connectioninfo | jq '.bssid')" != "null" ]]; then 
-      wget -O "${METADATA}.json" "${URL}&$(date -u %Y-%m-%d)" \
+      wget -O "${METADATA}.json" "${URL}&$(date -u +%Y-%m-%d)" \
       && wget -O "${APOD}.jpg" "$(jq -r '.hdurl' "$METADATA.json")" \
-      && UP_TO_DATE=true \
+      && up_to_date=true \
       || sleep 3600
     else
       sleep 3600
@@ -85,28 +66,26 @@ update_opt() {
 # Set lock screen wallpaper
 set_opt() {
   now=$(TIME)
-  if [[ -f "${METADATA}.json" && -f "${APOD}.jpg" ]]; then
+  # Check for existence and time correspondance
+  if [[ -f "${METADATA}.json" && -f "${APOD}.jpg" && ! $1 ]]; then
     [[ $now == $(jq -r '.date' "${METADATA}.json") ]] \
       && termux-wallpaper -l -f "${APOD}.jpg" \
-      || sleep 4000 && set_opt
+      || sleep 3600 && set_opt flag
   else
     wallpaper -u
+    set_opt
   fi
 }
 
-padding() {
-  echo "$((${COLUMNS}/2 - ${#1}/2))"
+# Center a string
+center() { # $1 is content, $2 is styke
+  padding=$((${COLUMNS}/2 - ${#1}/2))
+  printf "%-${padding}s%s\n" "" "${2}${1}${RESET}"
 }
-center() {
-  # First argument is content
-  # Second argument is style
-  p=$(padding $1)
-  printf "%-${p}s%s\n" "" "${2}${1}${RESET}"
-}
-format() {
+# Formats .title and .explanation like a newspaper
+news() { # $1 is metadata location
   # Title
-  CODES="${BOLD}${YELLOW}"
-  center "$(jq -r '.title' "$1")" "$CODES"
+  center "$(jq -r '.title' "$1")" "$TITLE_STYLE"
   
   # Explanation (in two colums)
   explanation="  $(jq -r '.explanation' "$1")"  
@@ -118,16 +97,17 @@ format() {
   half=$((${#lines_array[@]}/2))
 
   for ((i = 1; i <= $half + 1; i++)); do
-    printf " %-${WIDTH}s  %s\n" "$lines_array[i]" "$lines_array[half+i-1]"
+    printf " %-${width}s  %s\n" "$lines_array[i]" "$lines_array[half+i-1]"
   done
 }
 # Print metadata
 print_opt() {
   now=$(TIME)
+  # Check for existence and time correspondance
   if [[ -f "${METADATA}.json" && -f "${APOD}.jpg" ]]; then
     [[ $now == $(jq -r '.date' "${METADATA}.json") ]] \
-      && format "${METADATA}.json" \
-      || format "${METADATA}.bak.json"
+      && news "${METADATA}.json" \
+      || news "${METADATA}.bak.json"
   fi
 }
 
