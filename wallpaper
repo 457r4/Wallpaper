@@ -2,6 +2,7 @@
 
 termux-wake-lock
 
+# Graphical resources
 BLACK=$'\033[30m'
 RED=$'\033[31m'
 GREEN=$'\033[32m'
@@ -11,51 +12,83 @@ MAGENTA=$'\033[35m'
 CYAN=$'\033[36m'
 WHITE=$'\033[37m'
 CYAN=$'\033[36m' 
-
 BOLD=$'\033[1m'
 ITALIC=$'\033[3m'
 UNDERLINE=$'\033[4m'
-
 RESET=$'\033[0m'
 
+# App routes
 APPNAME=$(basename "$0")
-APP_DATA="$HOME/.local/share/$APPNAME"
-METADATA="$APP_DATA/metadata.json"
-UP_TO_DATE=false
+APP_DATA="$HOME/.local/share/${APPNAME}"
+METADATA="$APP_DATA/metadata"
+APOD="$APP_DATA/apod"
 
 [[ ! -d "$APP_DATA" ]] && mkdir -p "$APP_DATA"
 
-update_fun() {
-  while [[ "$UP_TO_DATE" == false ]]; do
+# Settings
+URL="https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY"
+OFFSET=$((6*3600))
+TITLE_STYLE="${BOLD}${YELLOW}"
+
+TIME() {
+  now=$(date +%s)
+  echo $(date -d "@$((now - OFFSET))" +%Y-%m-%d)
+}
+
+# Download data && keep a backup of past day
+update_opt() {
+  # Verify files' existence and make a backup if outdated
+  utc=$(date -u +%Y-%m-%d)
+  registered=''
+  if [[ -f "${METADATA}.json" ]]; then
+    registered=$(jq -r '.date' "${METADATA}.json")
+  fi
+  [[ -f "${METADATA}.json" ]] && [[ "$utc" != "$registered" ]] \
+    && mv "${METADATA}.json" "${METADATA}.bak.json"
+  [[ -f "${APOD}.jpg" ]] && [[ "$utc" != "$registered" ]] \
+    && mv "${APOD}.jpg" "${APOD}.bak.jpg"
+
+  # Check connection and obtain data 
+  # If data fails to be obtained, retry
+  up_to_date=false
+  while [[ "$up_to_date" == false ]]; do
     if [[ "$(termux-wifi-connectioninfo | jq '.bssid')" != "null" ]]; then 
-      wget -O "$METADATA" "https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&date=$(date -u +"%Y-%m-%d")"
-      wget -O "$APP_DATA/apod.jpg" "$(jq -r '.hdurl' "$METADATA")"
-      [[ $? -eq 0 ]] && UP_TO_DATE=true
+      wget -O "${METADATA}.json" "${URL}&$(date -u +%Y-%m-%d)" \
+      && wget -O "${APOD}.jpg" "$(jq -r '.hdurl' "$METADATA.json")" \
+      && up_to_date=true \
+      || sleep 3600
     else
       sleep 3600
     fi
   done
 }
 
-set_fun() {
-  termux-wallpaper -l -f "$APP_DATA/apod.jpg"
-  # termux-wallpaper -l -u "$(jq -r '.hdurl' "$METADATA")"
-  [[ $? != 0 ]] && $selected
+# Set lock screen wallpaper
+set_opt() {
+  now=$(TIME)
+  # Check for existence and time correspondance
+  if [[ -f "${METADATA}.json" && -f "${APOD}.jpg" && ! $1 ]]; then
+    [[ $now == $(jq -r '.date' "${METADATA}.json") ]] \
+      && termux-wallpaper -l -f "${APOD}.jpg" \
+      || sleep 3600 && set_opt flag
+  else
+    wallpaper -u
+    set_opt
+  fi
 }
 
-padding() {
-  echo "$((${COLUMNS}/2 - ${#1}/2))"
+# Center a string
+center() { # $1 is content, $2 is styke
+  padding=$((${COLUMNS}/2 - ${#1}/2))
+  printf "%-${padding}s%s\n" "" "${2}${1}${RESET}"
 }
-center() {
-  # First argument is content
-  # Second argument is style
-  p=$(padding $1)
-  printf "%-${p}s%s\n" "" "${2}${1}${RESET}"
-}
-print_fun() {
-  center "$(jq -r '.title' "$METADATA")" "${BOLD}${YELLOW}"
+# Formats .title and .explanation like a newspaper
+news() { # $1 is metadata location
+  # Title
+  center "$(jq -r '.title' "$1")" "$TITLE_STYLE"
   
-  explanation="  $(jq -r '.explanation' "$METADATA")"  
+  # Explanation (in two colums)
+  explanation="  $(jq -r '.explanation' "$1")"  
   width=$(($COLUMNS/2 - 2))
   lines=$(echo "$explanation" | fold -w $width)
 
@@ -63,9 +96,24 @@ print_fun() {
   lines_array=("${(@f)lines}")
   half=$((${#lines_array[@]}/2))
 
+<<<<<<< HEAD
   for ((i = 1; i <= $half; i++)); do
     printf " %-${WIDTH}s  %s\n" "$lines_array[i]" "$lines_array[half+i]"
+=======
+  for ((i = 1; i <= $half + 1; i++)); do
+    printf " %-${width}s  %s\n" "$lines_array[i]" "$lines_array[half+i-1]"
+>>>>>>> ongoing-feature
   done
+}
+# Print metadata
+print_opt() {
+  now=$(TIME)
+  # Check for existence and time correspondance
+  if [[ -f "${METADATA}.json" && -f "${APOD}.jpg" ]]; then
+    [[ $now == $(jq -r '.date' "${METADATA}.json") ]] \
+      && news "${METADATA}.json" \
+      || news "${METADATA}.bak.json"
+  fi
 }
 
 opt_count=0
@@ -73,13 +121,13 @@ while getopts ":usp" opt; do
   ((opt_count++))
   case "$opt" in
     u)
-      selected="update_fun"
+      selected="update_opt"
     ;;
     s)
-      selected="set_fun"
+      selected="set_opt"
     ;;
     p)
-      selected="print_fun"
+      selected="print_opt"
     ;;
     \?) 
       echo "Invalid option: -$OPTARG" >&2 
@@ -88,7 +136,7 @@ while getopts ":usp" opt; do
   esac
 done
 
-if (( opt_count = 0 )); then
+if (( opt_count == 0 )); then
   echo "You must pick at least one option: -u, -s or -p"
   exit -1 
 elif (( opt_count > 1)); then
