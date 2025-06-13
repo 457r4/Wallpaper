@@ -30,6 +30,7 @@ URL="https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY"
 OFFSET=$((6*3600))
 TITLE_STYLE="${BOLD}${YELLOW}"
 
+# Calculates "today" so the image and descriptuon change can be done at OFFSET time
 TIME() {
   now=$(date +%s)
   echo $(date -d "@$((now - OFFSET))" +%Y-%m-%d)
