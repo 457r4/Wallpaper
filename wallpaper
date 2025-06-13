@@ -63,8 +63,8 @@ print_fun() {
   lines_array=("${(@f)lines}")
   half=$((${#lines_array[@]}/2))
 
-  for ((i = 1; i <= $half + 1; i++)); do
-    printf " %-${WIDTH}s  %s\n" "$lines_array[i]" "$lines_array[half+i-1]"
+  for ((i = 1; i <= $half; i++)); do
+    printf " %-${WIDTH}s  %s\n" "$lines_array[i]" "$lines_array[half+i]"
   done
 }
 
