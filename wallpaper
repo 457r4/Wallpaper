@@ -19,12 +19,35 @@ UNDERLINE=$'\033[4m'
 RESET=$'\033[0m'
 
 APPNAME=$(basename "$0")
-APP_DATA="$HOME/.local/share/$APPNAME"
+APP_DATA="$HOME/.local/share/${APPNAME}_test"
 METADATA="$APP_DATA/metadata.json"
 UP_TO_DATE=false
 
 [[ ! -d "$APP_DATA" ]] && mkdir -p "$APP_DATA"
 
+# ADITIONALLY
+#   set and print should check if the displayed
+#   image corresponds to the date
+
+############### 6AM MODULE ###############
+hour=$(date +%s)
+corrected=$(($hour - 21600)) # Will move starting time to 6am
+corrected_formated=$(date -d "@$corrected" +%Y-%m-%d)
+echo $new
+if [[ $corrected_formated == $(date +"%Y-%m-%d") ]]; then
+  echo "It is 'today'"
+else
+  echo "It is not 'today'"
+fi
+##########################################
+
+# echo "$(($hour - 6))"
+# At 6am hour would be 0
+# Consider hour and day 
+#
+
+# Download data 
+# Keep a backup of past day
 update_fun() {
   while [[ "$UP_TO_DATE" == false ]]; do
     if [[ "$(termux-wifi-connectioninfo | jq '.bssid')" != "null" ]]; then 
@@ -37,6 +60,7 @@ update_fun() {
   done
 }
 
+# Set lock screen wallpaper
 set_fun() {
   termux-wallpaper -l -f "$APP_DATA/apod.jpg"
   # termux-wallpaper -l -u "$(jq -r '.hdurl' "$METADATA")"
@@ -52,6 +76,7 @@ center() {
   p=$(padding $1)
   printf "%-${p}s%s\n" "" "${2}${1}${RESET}"
 }
+# Print metadata
 print_fun() {
   center "$(jq -r '.title' "$METADATA")" "${BOLD}${YELLOW}"
   
