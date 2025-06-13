@@ -19,7 +19,7 @@ RESET=$'\033[0m'
 
 # App routes
 APPNAME=$(basename "$0")
-APP_DATA="$HOME/.local/share/${APPNAME}_test"
+APP_DATA="$HOME/.local/share/${APPNAME}"
 METADATA="$APP_DATA/metadata"
 APOD="$APP_DATA/apod"
 
