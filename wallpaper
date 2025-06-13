@@ -2,6 +2,7 @@
 
 termux-wake-lock
 
+# Graphical resources
 BLACK=$'\033[30m'
 RED=$'\033[31m'
 GREEN=$'\033[32m'
@@ -11,16 +12,19 @@ MAGENTA=$'\033[35m'
 CYAN=$'\033[36m'
 WHITE=$'\033[37m'
 CYAN=$'\033[36m' 
-
 BOLD=$'\033[1m'
 ITALIC=$'\033[3m'
 UNDERLINE=$'\033[4m'
-
 RESET=$'\033[0m'
 
+# App routes
 APPNAME=$(basename "$0")
 APP_DATA="$HOME/.local/share/${APPNAME}_test"
-METADATA="$APP_DATA/metadata.json"
+METADATA="$APP_DATA/metadata"
+APOD="$APP_DATA/apod"
+
+# Main variables?
+OFFSET=$((6*3600))
 UP_TO_DATE=false
 
 [[ ! -d "$APP_DATA" ]] && mkdir -p "$APP_DATA"
@@ -30,30 +34,47 @@ UP_TO_DATE=false
 #   image corresponds to the date
 
 ############### 6AM MODULE ###############
-hour=$(date +%s)
-corrected=$(($hour - 21600)) # Will move starting time to 6am
-corrected_formated=$(date -d "@$corrected" +%Y-%m-%d)
-echo $new
-if [[ $corrected_formated == $(date +"%Y-%m-%d") ]]; then
+TIME() {
+  now=$(date +%s)
+  echo $(date -d "@$((now - OFFSET))" +%Y-%m-%d)
+}
+# hour=$(date +%s)
+# corrected=$(($hour - 21600)) # Will move starting time to 6am
+# corrected_formated=$(date -d "@$corrected" +%Y-%m-%d)
+corrected_formated=$(TIME)
+echo $corrected_formated
+if [[ "$corrected_formated" == "$(jq -r '.date' ${METADATA}.json)" ]]; then
   echo "It is 'today'"
 else
   echo "It is not 'today'"
 fi
 ##########################################
 
-# echo "$(($hour - 6))"
-# At 6am hour would be 0
-# Consider hour and day 
-#
+
 
 # Download data 
 # Keep a backup of past day
 update_fun() {
+  # Verify files' existence and make a backup if outdated
+  utc=$(date -u +%Y-%m-%d)
+  registered=''
+  if [[ -f "${METADATA}.json" ]]; then
+    registered=$(jq -r '.date' "${METADATA}.json")
+  fi
+  [[ -f "${METADATA}.json" ]] && [[ "$utc" != "$registered" ]] \
+    && mv "${METADATA}.json" "${METADATA}.bak.json"
+  [[ -f "${APOD}.jpg" ]] && [[ "$utc" != "$registered" ]] \
+    && mv "${APOD}.jpg" "${APOD}.bak.jpg"
+
+  # Check connection and obtain data 
+  # If data fails to be obtained, retry
   while [[ "$UP_TO_DATE" == false ]]; do
+    URL="https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY"
     if [[ "$(termux-wifi-connectioninfo | jq '.bssid')" != "null" ]]; then 
-      wget -O "$METADATA" "https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&date=$(date -u +"%Y-%m-%d")"
-      wget -O "$APP_DATA/apod.jpg" "$(jq -r '.hdurl' "$METADATA")"
-      [[ $? -eq 0 ]] && UP_TO_DATE=true
+      wget -O "${METADATA}.json" "${URL}&$(date -u %Y-%m-%d)" \
+      && wget -O "${APOD}.jpg" "$(jq -r '.hdurl' "$METADATA.json")" \
+      && UP_TO_DATE=true \
+      || sleep 3600
     else
       sleep 3600
     fi
