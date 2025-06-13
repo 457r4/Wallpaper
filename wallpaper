@@ -23,11 +23,12 @@ APP_DATA="$HOME/.local/share/${APPNAME}_test"
 METADATA="$APP_DATA/metadata"
 APOD="$APP_DATA/apod"
 
+[[ ! -d "$APP_DATA" ]] && mkdir -p "$APP_DATA"
+
 # Main variables?
 OFFSET=$((6*3600))
 UP_TO_DATE=false
 
-[[ ! -d "$APP_DATA" ]] && mkdir -p "$APP_DATA"
 
 # ADITIONALLY
 #   set and print should check if the displayed
@@ -54,7 +55,7 @@ fi
 
 # Download data 
 # Keep a backup of past day
-update_fun() {
+update_opt() {
   # Verify files' existence and make a backup if outdated
   utc=$(date -u +%Y-%m-%d)
   registered=''
@@ -82,10 +83,15 @@ update_fun() {
 }
 
 # Set lock screen wallpaper
-set_fun() {
-  termux-wallpaper -l -f "$APP_DATA/apod.jpg"
-  # termux-wallpaper -l -u "$(jq -r '.hdurl' "$METADATA")"
-  [[ $? != 0 ]] && $selected
+set_opt() {
+  now=$(TIME)
+  if [[ -f "${METADATA}.json" && -f "${APOD}.jpg" ]]; then
+    $now == $(jq -r '.date' "${METADATA}.json") \
+      && termux-wallpaper -l -f "${APOD}.jpg" \
+      || sleep 3600 && set_opt
+  else
+    wallpaper -u
+  fi
 }
 
 padding() {
@@ -98,7 +104,7 @@ center() {
   printf "%-${p}s%s\n" "" "${2}${1}${RESET}"
 }
 # Print metadata
-print_fun() {
+print_opt() {
   center "$(jq -r '.title' "$METADATA")" "${BOLD}${YELLOW}"
   
   explanation="  $(jq -r '.explanation' "$METADATA")"  
@@ -119,13 +125,13 @@ while getopts ":usp" opt; do
   ((opt_count++))
   case "$opt" in
     u)
-      selected="update_fun"
+      selected="update_opt"
     ;;
     s)
-      selected="set_fun"
+      selected="set_opt"
     ;;
     p)
-      selected="print_fun"
+      selected="print_opt"
     ;;
     \?) 
       echo "Invalid option: -$OPTARG" >&2 
