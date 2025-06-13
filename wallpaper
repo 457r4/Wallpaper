@@ -43,7 +43,7 @@ TIME() {
 # corrected=$(($hour - 21600)) # Will move starting time to 6am
 # corrected_formated=$(date -d "@$corrected" +%Y-%m-%d)
 corrected_formated=$(TIME)
-echo $corrected_formated
+echo "corrected_formated: $corrected_formated"
 if [[ "$corrected_formated" == "$(jq -r '.date' ${METADATA}.json)" ]]; then
   echo "It is 'today'"
 else
@@ -86,9 +86,9 @@ update_opt() {
 set_opt() {
   now=$(TIME)
   if [[ -f "${METADATA}.json" && -f "${APOD}.jpg" ]]; then
-    $now == $(jq -r '.date' "${METADATA}.json") \
+    [[ $now == $(jq -r '.date' "${METADATA}.json") ]] \
       && termux-wallpaper -l -f "${APOD}.jpg" \
-      || sleep 3600 && set_opt
+      || sleep 4000 && set_opt
   else
     wallpaper -u
   fi
@@ -103,11 +103,13 @@ center() {
   p=$(padding $1)
   printf "%-${p}s%s\n" "" "${2}${1}${RESET}"
 }
-# Print metadata
-print_opt() {
-  center "$(jq -r '.title' "$METADATA")" "${BOLD}${YELLOW}"
+format() {
+  # Title
+  CODES="${BOLD}${YELLOW}"
+  center "$(jq -r '.title' "$1")" "$CODES"
   
-  explanation="  $(jq -r '.explanation' "$METADATA")"  
+  # Explanation (in two colums)
+  explanation="  $(jq -r '.explanation' "$1")"  
   width=$(($COLUMNS/2 - 2))
   lines=$(echo "$explanation" | fold -w $width)
 
@@ -118,6 +120,15 @@ print_opt() {
   for ((i = 1; i <= $half + 1; i++)); do
     printf " %-${WIDTH}s  %s\n" "$lines_array[i]" "$lines_array[half+i-1]"
   done
+}
+# Print metadata
+print_opt() {
+  now=$(TIME)
+  if [[ -f "${METADATA}.json" && -f "${APOD}.jpg" ]]; then
+    [[ $now == $(jq -r '.date' "${METADATA}.json") ]] \
+      && format "${METADATA}.json" \
+      || format "${METADATA}.bak.json"
+  fi
 }
 
 opt_count=0
