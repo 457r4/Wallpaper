@@ -131,7 +131,7 @@ while getopts ":usp" opt; do
   esac
 done
 
-if (( opt_count = 0 )); then
+if (( opt_count == 0 )); then
   echo "You must pick at least one option: -u, -s or -p"
   exit -1 
 elif (( opt_count > 1)); then
