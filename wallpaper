@@ -79,7 +79,7 @@ set_opt() {
 
 # Center a string
 center() { # $1 is content, $2 is styke
-  padding=$((${COLUMNS}/2 - ${#1}/2))
+  padding=$((COLUMNS/2 - ${#1}/2))
   printf "%-${padding}s%s\n" "" "${2}${1}${RESET}"
 }
 # Formats .title and .explanation like a newspaper
@@ -89,7 +89,7 @@ news() { # $1 is metadata location
   
   # Explanation (in two colums)
   explanation="  $(jq -r '.explanation' "$1")"  
-  width=$(($COLUMNS/2 - 2))
+  width=$((COLUMNS/2 - 2))
   lines=$(echo "$explanation" | fold -w $width)
 
   IFS="\n"
