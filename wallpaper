@@ -53,7 +53,7 @@ update_opt() {
   up_to_date=false
   while [[ "$up_to_date" == false ]]; do
     if [[ "$(termux-wifi-connectioninfo | jq '.bssid')" != "null" ]]; then 
-      wget -O "${METADATA}.json" "${URL}&$(date -u +%Y-%m-%d)" \
+      wget -O "${METADATA}.json" "${URL}&date=$(date -u +%Y-%m-%d)" \
       && wget -O "${APOD}.jpg" "$(jq -r '.hdurl' "$METADATA.json")" \
       && up_to_date=true \
       || sleep 3600
@@ -96,13 +96,8 @@ news() { # $1 is metadata location
   lines_array=("${(@f)lines}")
   half=$((${#lines_array[@]}/2))
 
-<<<<<<< HEAD
-  for ((i = 1; i <= $half; i++)); do
-    printf " %-${WIDTH}s  %s\n" "$lines_array[i]" "$lines_array[half+i]"
-=======
   for ((i = 1; i <= $half + 1; i++)); do
     printf " %-${width}s  %s\n" "$lines_array[i]" "$lines_array[half+i-1]"
->>>>>>> ongoing-feature
   done
 }
 # Print metadata
