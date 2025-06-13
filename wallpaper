@@ -67,10 +67,10 @@ update_opt() {
 set_opt() {
   now=$(TIME)
   # Check for existence and time correspondance
-  if [[ -f "${METADATA}.json" && -f "${APOD}.jpg" && ! $1 ]]; then
+  if [[ -f "${METADATA}.json" && -f "${APOD}.jpg" ]]; then
     [[ $now == $(jq -r '.date' "${METADATA}.json") ]] \
       && termux-wallpaper -l -f "${APOD}.jpg" \
-      || sleep 3600 && set_opt flag
+      || termux-wallpaper -l -f "${APOD}.bak.jpg"
   else
     wallpaper -u
     set_opt
