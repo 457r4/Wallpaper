@@ -111,9 +111,19 @@ print_opt() {
       || news "${METADATA}.bak.json"
   fi
 }
+# Open APOD
+display_opt() {
+  now=$(TIME)
+  # Check for existence and time correspondance
+  if [[ -f "${METADATA}.json" && -f "${APOD}.jpg" ]]; then
+    [[ $now == $(jq -r '.date' "${METADATA}.json") ]] \
+      && termux-open "${APOD}.jpg" \
+      || termux-open "${APOD}.bak.jpg"
+  fi
+}
 
 opt_count=0
-while getopts ":usp" opt; do
+while getopts ":uspd" opt; do
   ((opt_count++))
   case "$opt" in
     u)
@@ -125,6 +135,9 @@ while getopts ":usp" opt; do
     p)
       selected="print_opt"
     ;;
+    d)
+      selected="display_opt"
+    ;;
     \?) 
       echo "Invalid option: -$OPTARG" >&2 
       exit -1 
@@ -133,7 +146,7 @@ while getopts ":usp" opt; do
 done
 
 if (( opt_count == 0 )); then
-  echo "You must pick at least one option: -u, -s or -p"
+  echo "You must pick at least one option: -u, -s, -p or -d"
   exit -1 
 elif (( opt_count > 1)); then
   echo "Too many options"
