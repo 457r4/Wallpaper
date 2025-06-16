@@ -91,11 +91,16 @@ news() { # $1 is metadata location
   # Explanation (in two colums)
   explanation="  $(jq -r '.explanation' "$1")"  
   width=$((COLUMNS/2 - 2))
-  lines=$(echo "$explanation" | fold -w $width)
+  lines=$(echo "$explanation" | fold -w "$width")
 
   IFS="\n"
   lines_array=("${(@f)lines}")
-  half=$((${#lines_array[@]}/2))
+  lines_array_len=${#lines_array[@]}
+  half=$((lines_array_len/2))
+
+  (( half*2 < lines_array_len )) \
+    && lines_array+=(" ") \
+    && ((half++))
 
   for ((i = 1; i <= $half; i++)); do
     printf " %-${width}s  %s\n" "$lines_array[i]" "$lines_array[half+i]"
