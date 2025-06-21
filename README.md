@@ -26,9 +26,9 @@ Opens the APOD in whichever app you prefer.
 
 
 ## Requirements
-In order for this script to work properly you'll need to install `zsh`, `cronie`, `termux-api` and `termux-services`.
+In order for this script to work properly you'll need to install `zsh`, `cronie`, `imagemagick`, `termux-api` and `termux-services`.
 ```zsh
-$ pacman -S zsh cronie termux-api termux-services
+$ pacman -S zsh cronie imagemagick termux-api termux-services
 $ ln -s $PREFIX/bin/zsh ~/.termux/shell
 ```
 Termux API needs the app with the same name which you can download via F-Droid, for `termux-services` you can check how to set it up on the wiki.
