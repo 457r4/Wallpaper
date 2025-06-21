@@ -61,7 +61,7 @@ update_opt() {
   up_to_date=false
   while [[ "$up_to_date" == false ]]; do
     if [[ "$(termux-wifi-connectioninfo | jq '.bssid')" != "null" ]]; then 
-      wget -O "${METADATA}.json" "${URL}&date=$(date -u +%Y-%m-%d)" \
+      wget -O "${METADATA}.json" "${URL}&date=${utc}" \
       && wget -O "${APOD}.jpg" "$(jq -r '.hdurl' "$METADATA.json")" \
       && up_to_date=true \
       || sleep 3600
