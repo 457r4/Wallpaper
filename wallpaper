@@ -36,6 +36,13 @@ TIME() {
   echo $(date -d "@$((now - OFFSET))" +%Y-%m-%d)
 }
 
+# How will the image be best displayed
+rotate() { # $1 is the APOD
+  ratio=$(magick identify -format "%[fx:w/h]" $1)
+  if (( $(echo "$ratio >= 1.5" | bc -l) )); then
+    magick $1 -rotate 90 "${APOD}.jpg"
+  fi
+}
 # Download data && keep a backup of past day
 update_opt() {
   # Verify files' existence and make a backup if outdated
@@ -62,6 +69,9 @@ update_opt() {
       sleep 3600
     fi
   done
+  
+  # Check if image needs to be rotated
+  [[ -f "${APOD}.jpg" ]] && rotate "${APOD}.jpg"
 }
 
 # Set lock screen wallpaper
