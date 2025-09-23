@@ -60,7 +60,7 @@ update_opt() {
   # If data fails to be obtained, retry
   up_to_date=false
   while [[ "$up_to_date" == false ]]; do
-    if [[ "$(termux-wifi-connectioninfo | jq '.bssid')" != "null" ]]; then 
+    if ping -c 5 -W 3 8.8.8.8 > /dev/null 2>&1; then
       wget -O "${METADATA}.json" "${URL}&date=${utc}" \
       && wget -O "${APOD}.jpg" "$(jq -r '.hdurl' "$METADATA.json")" \
       && up_to_date=true \
