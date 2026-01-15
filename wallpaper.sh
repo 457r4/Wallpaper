@@ -2,20 +2,8 @@
 
 termux-wake-lock
 
-# Graphical resources
-BLACK=$'\033[30m'
-RED=$'\033[31m'
-GREEN=$'\033[32m'
-YELLOW=$'\033[33m'
-BLUE=$'\033[34m'
-MAGENTA=$'\033[35m'
-CYAN=$'\033[36m'
-WHITE=$'\033[37m'
-CYAN=$'\033[36m' 
-BOLD=$'\033[1m'
-ITALIC=$'\033[3m'
-UNDERLINE=$'\033[4m'
-RESET=$'\033[0m'
+# Import colors and useful functions
+[[ -f $SHELL_LIB/shell_utils ]] && source $SHELL_LIB/shell_utils || exit 1
 
 # App routes
 APPNAME=$(basename "$0")
@@ -39,7 +27,7 @@ TIME() {
 # How will the image be best displayed
 rotate() { # $1 is the APOD
   ratio=$(magick identify -format "%[fx:w/h]" $1)
-  if (( $(echo "$ratio >= 1.5" | bc -l) )); then
+  if (( $(echo "$ratio >= 1" | bc -l) )); then
     magick $1 -rotate 90 "${APOD}.jpg"
   fi
 }
@@ -88,11 +76,6 @@ set_opt() {
   fi
 }
 
-# Center a string
-center() { # $1 is content, $2 is styke
-  padding=$((COLUMNS/2 - ${#1}/2))
-  printf "%-${padding}s%s\n" "" "${2}${1}${RESET}"
-}
 # Formats .title and .explanation like a newspaper
 news() { # $1 is metadata location
   # Title
